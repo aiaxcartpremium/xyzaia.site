@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Aiaxcart Admin Panel</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- Bootstrap + Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"/>
+
+  <!-- Supabase -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body {
+      background:#f5f5f5;
+      font-family:"Segoe UI",Arial;
+    }
+    header {
+      background:white;
+      padding:.8rem 1rem;
+      border-bottom:1px solid #eee;
+      position:sticky;
+      top:0; z-index:99;
+      display:flex; justify-content:space-between; align-items:center;
+    }
+    .admin-logo { font-size:1.4rem; font-weight:800; display:flex; gap:.4rem; }
+    nav .nav-btn {
+      font-weight:600; margin-left:.6rem; cursor:pointer;
+      padding:.45rem .9rem; border-radius:8px;
+      color:#333; text-decoration:none; transition:.15s;
+    }
+    nav .nav-btn.active { background:#ff6b6b; color:white; }
+    .panel { display:none; padding:1.2rem; }
+    .panel.active { display:block; }
+    .card-shadow {
+      background:white; border-radius:10px; padding:1rem;
+      box-shadow:0 4px 14px rgba(0,0,0,0.07);
+    }
+    .form-label { font-weight:600; }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <div class="admin-logo">🛠️ Aiaxcart Admin</div>
+
+  <nav>
+    <a class="nav-btn active" data-tab="products-panel">Products</a>
+    <a class="nav-btn" data-tab="stocks-panel">Stocks</a>
+    <a class="nav-btn" data-tab="orders-panel">Orders</a>
+    <a class="nav-btn" data-tab="records-panel">Records</a>
+    <a class="nav-btn" data-tab="rules-panel">Rules</a>
+    <a class="nav-btn" data-tab="feedback-panel">Feedback</a>
+    <a class="nav-btn" data-tab="reports-panel">Reports</a>
+  </nav>
+</header>
+
+<main class="container my-3">
+
+<!-- =============================================
+     PRODUCTS PANEL
+============================================= -->
+<section id="products-panel" class="panel active">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold">Products</h3>
+    <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#modalAddProduct">
+      <i class="fa fa-plus me-1"></i> Add Product
+    </button>
+  </div>
+
+  <div id="products-table" class="card-shadow">
+    <div class="text-center text-muted py-4">Loading products…</div>
+  </div>
+
+</section>
+
+
+<!-- ADD PRODUCT MODAL -->
+<div class="modal fade" id="modalAddProduct" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Add Product</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <label class="form-label">Product ID (unique key)</label>
+        <input id="add-product-id" class="form-control"/>
+
+        <label class="form-label mt-3">Name</label>
+        <input id="add-product-name" class="form-control"/>
+
+        <label class="form-label mt-3">Category</label>
+        <select id="add-product-category" class="form-select">
+          <option value="ai">AI Tools</option>
+          <option value="editing">Editing</option>
+          <option value="entertainment">Entertainment</option>
+          <option value="streaming">Streaming</option>
+          <option value="educational">Educational</option>
+        </select>
+
+        <label class="form-label mt-3">Icon (emoji)</label>
+        <input id="add-product-icon" class="form-control" placeholder="📺"/>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button id="btnSaveProduct" class="btn btn-primary">Save</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- EDIT PRODUCT MODAL -->
+<div class="modal fade" id="modalEditProduct" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Product</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <input id="edit-product-id" type="hidden"/>
+
+        <label class="form-label">Name</label>
+        <input id="edit-product-name" class="form-control"/>
+
+        <label class="form-label mt-3">Category</label>
+        <select id="edit-product-category" class="form-select">
+          <option value="ai">AI Tools</option>
+          <option value="editing">Editing</option>
+          <option value="entertainment">Entertainment</option>
+          <option value="streaming">Streaming</option>
+          <option value="educational">Educational</option>
+        </select>
+
+        <label class="form-label mt-3">Icon</label>
+        <input id="edit-product-icon" class="form-control"/>
+
+      </div>
+
+      <div class="modal-footer">
+
+        <button id="btnDeleteProduct" class="btn btn-danger">
+          <i class="fa fa-trash me-1"></i> Delete
+        </button>
+
+        <button id="btnUpdateProduct" class="btn btn-primary">Update</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- =============================================
+     STOCKS PANEL
+============================================= -->
+<section id="stocks-panel" class="panel">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold">Stocks</h3>
+    <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#modalAddStock">
+      <i class="fa fa-plus me-1"></i> Add Stock
+    </button>
+  </div>
+
+  <div id="stocks-table" class="card-shadow">
+    <div class="text-center text-muted py-4">Loading stock entries…</div>
+  </div>
+
+</section>
+
+<!-- ADD STOCK MODAL -->
+<div class="modal fade" id="modalAddStock" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Add Stock</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <label class="form-label">Product</label>
+        <select id="stock-product" class="form-select">
+          <option>Loading…</option>
+        </select>
+
+        <label class="form-label mt-3">Account Type</label>
+        <select id="stock-type" class="form-select">
+          <option>Loading…</option>
+        </select>
+
+        <label class="form-label mt-3">Duration</label>
+        <select id="stock-duration" class="form-select">
+          <option>Loading…</option>
+        </select>
+
+        <label class="form-label mt-3">Quantity</label>
+        <input id="stock-quantity" type="number" class="form-control"/>
+
+        <label class="form-label mt-3">Premium Until</label>
+        <input id="stock-expiry" type="date" class="form-control"/>
+
+        <label class="form-label mt-3">Archive After (days)</label>
+        <input id="stock-archivedays" type="number" class="form-control"/>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button id="btnSaveStock" class="btn btn-primary">Save</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- EDIT STOCK MODAL -->
+<div class="modal fade" id="modalEditStock" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Stock</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <input id="edit-stock-id" type="hidden"/>
+
+        <label class="form-label">Quantity</label>
+        <input id="edit-stock-quantity" type="number" class="form-control"/>
+
+        <label class="form-label mt-3">Premium Until</label>
+        <input id="edit-stock-expiry" type="date" class="form-control"/>
+
+        <label class="form-label mt-3">Archive After (days)</label>
+        <input id="edit-stock-archive" type="number" class="form-control"/>
+
+      </div>
+
+      <div class="modal-footer">
+        <button id="btnArchiveStock" class="btn btn-warning">Archive</button>
+        <button id="btnDeleteStock" class="btn btn-danger">Delete</button>
+        <button id="btnUpdateStock" class="btn btn-primary">Update</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- =============================================
+     ORDERS PANEL
+============================================= -->
+<section id="orders-panel" class="panel">
+  <h3 class="fw-bold mb-3">Orders</h3>
+
+  <div id="orders-table" class="card-shadow">
+    <div class="text-center text-muted py-4">Loading orders…</div>
+  </div>
+</section>
+
+
+<!-- =============================================
+     RECORDS PANEL
+============================================= -->
+<section id="records-panel" class="panel">
+  <h3 class="fw-bold mb-3">Records</h3>
+  <div id="records-table" class="card-shadow">
+    <div class="text-center text-muted py-4">Loading records…</div>
+  </div>
+</section>
+
+<!-- EDIT RECORD MODAL (+ Add Days) -->
+<div class="modal fade" id="modalRecordEdit" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Record</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <input id="record-id" type="hidden"/>
+
+        <label class="form-label">Add Extra Days</label>
+        <input id="record-add-days" type="number" class="form-control" placeholder="ex: 30"/>
+
+        <label class="form-label mt-3">New Expiry Date</label>
+        <input id="record-new-expiry" type="date" class="form-control"/>
+
+      </div>
+
+      <div class="modal-footer">
+        <button id="btnDeleteRecord" class="btn btn-danger">Delete</button>
+        <button id="btnUpdateRecord" class="btn btn-primary">Save</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- =============================================
+     RULES PANEL
+============================================= -->
+<section id="rules-panel" class="panel">
+
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3 class="fw-bold">Store Rules</h3>
+    <button class="btn btn-dark" data-bs-toggle="modal" data-bs-target="#modalAddRule">
+      <i class="fa fa-plus me-1"></i> Add Rule
+    </button>
+  </div>
+
+  <div id="rules-table" class="card-shadow">
+    <div class="text-center text-muted py-4">Loading rules…</div>
+  </div>
+
+</section>
+
+<!-- ADD RULE MODAL -->
+<div class="modal fade" id="modalAddRule" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Add Rule</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <label class="form-label">Rule Text</label>
+        <input id="add-rule-text" class="form-control"/>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button id="btnSaveRule" class="btn btn-primary">Save</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- =============================================
+     FEEDBACK PANEL
+============================================= -->
+<section id="feedback-panel" class="panel">
+  <h3 class="fw-bold mb-3">Feedback</h3>
+  <div id="feedback-table" class="card-shadow">
+    <div class="text-center text-muted py-4">Loading feedback…</div>
+  </div>
+</section>
+
+
+<!-- =============================================
+     REPORTS PANEL
+============================================= -->
+<section id="reports-panel" class="panel">
+  <h3 class="fw-bold mb-3">Reports</h3>
+  <div id="reports-table" class="card-shadow">
+    <div class="text-center text-muted py-4">Loading reports…</div>
+  </div>
+</section>
+
+</main>
+
+
+<!-- Bootstrap -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Admin JS -->
+<script type="module" src="./admin.js"></script>
+
+</body>
+</html>
